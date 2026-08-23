@@ -709,7 +709,7 @@ export default function ProductDetail() {
             <div className="grid md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Barang / Jasa</p>
-                <p className="font-semibold">{product.judul_penawaran}</p>
+                <p className="font-semibold">{product.obyek_retribusi}</p>
               </div>
 
               <div>
