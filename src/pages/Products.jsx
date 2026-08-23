@@ -181,7 +181,7 @@ export default function Products() {
 
                       {/* Title */}
                       <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-green-600 transition-colors">
-                        {product.obyek_retribusi}
+                        {product.judul_penawaran}
                       </h3>
 
                       {/* Location */}

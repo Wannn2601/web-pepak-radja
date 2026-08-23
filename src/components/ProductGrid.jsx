@@ -251,7 +251,7 @@ export default function ProductGrid({ filters = {}, searchTerm = "" }) {
 
                       <img
                         src={isFallback ? logoApp : product.foto}
-                        alt={product.obyek_retribusi}
+                        alt={product.judul_penawaran}
                         className={
                           isFallback
                             ? "max-h-20 object-contain opacity-40 transition-transform duration-500 ease-out group-hover:scale-105"
@@ -279,7 +279,7 @@ export default function ProductGrid({ filters = {}, searchTerm = "" }) {
                       </span>
 
                       <h3 className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors duration-200">
-                        {product.obyek_retribusi}
+                        {product.judul_penawaran || "Data belum terisi"}
                       </h3>
 
                       <div className="flex items-start gap-1 mt-3 flex-1">

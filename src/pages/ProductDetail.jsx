@@ -101,8 +101,8 @@ export default function ProductDetail() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: product.obyek_retribusi,
-          text: `Lihat detail obyek retribusi: ${product.obyek_retribusi}`,
+          title: product.judul_penawaran,
+          text: `Lihat detail obyek retribusi: ${product.judul_penawaran}`,
           url: window.location.href, // Ini akan mengambil URL real website Anda
         });
       } catch (err) {
@@ -150,11 +150,11 @@ export default function ProductDetail() {
       email: wr?.email || "-",
 
       jenis: product?.golongan?.golongan || "Jasa",
-      rincian: product?.obyek_retribusi || "Sewa",
+      rincian: product?.judul_penawaran || "Sewa",
       pelayanan:
         product?.jenis?.jenis_retribusi || product?.tariftbl?.penerimaan || "-",
 
-      obyek: product?.obyek_retribusi || "-", // 🔥 tambahin ini (dipakai di preview)
+      obyek: product?.judul_penawaran || "-", // 🔥 tambahin ini (dipakai di preview)
 
       lokasi: product?.alamat || "-", // 🔥 penting buat preview
 
@@ -508,13 +508,13 @@ export default function ProductDetail() {
     if (product?.no_wa_pengelola && product.no_wa_pengelola.trim() !== "") {
       const phone = product.no_wa_pengelola.replace(/[^0-9]/g, "");
       const message = encodeURIComponent(
-        `Halo, saya ingin menanyakan bantuan terkait kendala pada aset dengan ID: ${product.id} (${product.obyek_retribusi}).`,
+        `Halo, saya ingin menanyakan bantuan terkait kendala pada aset dengan ID: ${product.id} (${product.judul_penawaran}).`,
       );
       window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
     } else {
       // KIRM ID MELALUI STATE
       navigate("/wanotfound", {
-        state: { idAset: product.id, namaObyek: product.obyek_retribusi },
+        state: { idAset: product.id, namaObyek: product.judul_penawaran },
       });
     }
   };
@@ -581,7 +581,11 @@ export default function ProductDetail() {
           {/* Judul */}
           <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/70 to-transparent">
             <h1 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md">
-              {product.obyek_retribusi}
+              {product.judul_penawaran ? (
+                    <p>{product.judul_penawaran }</p>
+                  ) : (
+                    <p> Data belum terisi</p>
+                  )}
             </h1>
           </div>
         </div>
@@ -614,7 +618,11 @@ export default function ProductDetail() {
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-2xl font-bold">
-                  {product.obyek_retribusi}
+                  {product.judul_penawaran ? (
+                    <p>{product.judul_penawaran }</p>
+                  ) : (
+                    <p> Data belum terisi</p>
+                  )}
                 </h2>
                 <div className="mt-4">
                   <p className="font-semibold">
