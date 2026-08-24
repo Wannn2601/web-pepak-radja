@@ -279,7 +279,7 @@ export default function ProductGrid({ filters = {}, searchTerm = "" }) {
                       </span>
 
                       <h3 className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-blue-600 transition-colors duration-200">
-                        {product.judul_penawaran || "Data belum terisi"}
+                        {product.judul_penawaran || "-"}
                       </h3>
 
                       <div className="flex items-start gap-1 mt-3 flex-1">
@@ -293,7 +293,7 @@ export default function ProductGrid({ filters = {}, searchTerm = "" }) {
 
                       <div className="mt-4 border-t border-slate-100 pt-3">
                         <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">
-                          Tarif
+                          Tarif / Harga
                         </p>
                         <div className="flex">
                           <p className="text-slate-900 flex-auto font-black text-sm sm:text-base group-hover:text-blue-600 transition-colors duration-200">

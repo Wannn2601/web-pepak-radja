@@ -890,7 +890,7 @@ export default function Header() {
 
                                 <div className="min-w-0 flex-1">
                                   <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm truncate tracking-tight font-sans">
-                                    {item?.obyek_retribusi}
+                                    {item?.judul_penawaran || "-"}
                                   </h3>
                                   <p className="text-[10px] text-blue-600 font-bold truncate uppercase mt-0.5">
                                     {item?.opd?.nama || "-"}
@@ -907,7 +907,7 @@ export default function Header() {
                                       Rp{" "}
                                       {Number(
                                         item?.tariftbl?.tarif || 0,
-                                      ).toLocaleString("id-ID")}
+                                      ).toLocaleString("id-ID")} {item?.tariftbl?.satuan?.satuan}
                                     </div>
                                   </div>
                                 </div>
@@ -941,7 +941,7 @@ export default function Header() {
                           Rincian Objek Retribusi
                         </h2>
                         <p className="text-sm sm:text-base font-black text-slate-900 tracking-tight mt-0.5 line-clamp-1 max-w-[90%] font-sans">
-                          {selectedDetail?.obyek_retribusi}
+                          {selectedDetail?.judul_penawaran || "-"}
                         </p>
                       </div>
                       <button
@@ -997,7 +997,7 @@ export default function Header() {
                           <div className="p-5 sm:p-6 space-y-5">
                             <div>
                               <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-snug font-sans">
-                                {selectedDetail?.obyek_retribusi}
+                                {selectedDetail?.judul_penawaran || "-"}
                               </h1>
                               <p className="text-xs text-slate-500 font-bold tracking-wide mt-1 uppercase">
                                 {selectedDetail?.kota?.kab_kota || "-"}
@@ -1006,13 +1006,13 @@ export default function Header() {
 
                             <div className="bg-blue-50/50 border border-blue-100/30 p-4 rounded-2xl backdrop-blur-sm">
                               <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mb-0.5">
-                                Tarif Sewa Objek
+                                Tarif Retribusi / Sewa / Jual
                               </p>
                               <p className="text-xl sm:text-2xl font-black text-blue-600 tracking-tight font-sans">
                                 Rp{" "}
                                 {Number(
                                   selectedDetail?.tariftbl?.tarif || 0,
-                                ).toLocaleString("id-ID")}
+                                ).toLocaleString("id-ID")} {selectedDetail?.tariftbl?.satuan?.satuan}
                               </p>
                             </div>
 

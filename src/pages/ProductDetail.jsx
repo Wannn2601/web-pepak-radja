@@ -584,7 +584,7 @@ export default function ProductDetail() {
               {product.judul_penawaran ? (
                     <p>{product.judul_penawaran }</p>
                   ) : (
-                    <p> Data belum terisi</p>
+                    <p> - </p>
                   )}
             </h1>
           </div>
@@ -621,7 +621,7 @@ export default function ProductDetail() {
                   {product.judul_penawaran ? (
                     <p>{product.judul_penawaran }</p>
                   ) : (
-                    <p> Data belum terisi</p>
+                    <p> - </p>
                   )}
                 </h2>
                 <div className="mt-4">
