@@ -293,6 +293,9 @@ export default function Register() {
   // =========================================================
   // SUBMIT REGISTER
   // =========================================================
+  // =========================================================
+  // SUBMIT REGISTER
+  // =========================================================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -309,7 +312,6 @@ export default function Register() {
       !formData.telepon
     ) {
       setError("Semua field wajib diisi");
-
       return;
     }
 
@@ -357,6 +359,32 @@ export default function Register() {
       console.log("REGISTER RESULT:", result);
 
       if (result.code === "00") {
+        // =========================================================
+        // KIRIM PESAN WHATSAPP OTOMATIS VIA FONNTE
+        // =========================================================
+        try {
+          const fonnteToken = "VjmncfdGbtxg9J3NhNyt";
+          const fonnteUrl = "https://api.fonnte.com/send";
+
+          const messageText = `Halo *${formData.nama}*,\n\nPendaftaran Wajib Retribusi Anda berhasil disimpan!\n\nDetail Akun:\n- ${formData.dokumen}: ${formData.nik_npwp}\n- Email: ${formData.email_rpp}\n- No Telepon: ${formData.telepon}\n\nSilakan cek Email Anda untuk melanjutkan proses set password (cek folder spam jika tidak ditemukan).\n\nTerima kasih.`;
+
+          const waFormData = new FormData();
+          waFormData.append("target", formData.telepon); // Mengambil nomor dari input telepon form
+          waFormData.append("message", messageText);
+          waFormData.append("countryCode", "62"); // Otomatis menyesuaikan jika nomor diawali 0
+
+          await fetch(fonnteUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": fonnteToken,
+            },
+            body: waFormData,
+          });
+        } catch (waErr) {
+          console.error("Gagal mengirim pesan WhatsApp:", waErr);
+        }
+        // =========================================================
+
         await Swal.fire({
           icon: "success",
           title: "Berhasil",
@@ -384,7 +412,6 @@ export default function Register() {
       setIsSaving(false);
     }
   };
-
   // =========================================================
   // SUBMIT PASSWORD
   // =========================================================
