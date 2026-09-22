@@ -142,6 +142,7 @@ export default function StatusBayar() {
   };
 
   // Mengambil data dari API backend baru via proxy /bapenda
+  // Mengambil data dari API backend baru via proxy /bapenda
   const handleSearch = async () => {
     setLoadingSearch(true);
 
@@ -155,9 +156,21 @@ export default function StatusBayar() {
       return;
     }
 
+    let queryVal = skrd.trim();
+
+    // Jika pengguna memasukkan nomor penetapan tanpa titik (misal hanya angka saja dan panjangnya 21 digit)
+    // Kita bisa bantuformat ke bentuk ber-titik secara otomatis jika diperlukan oleh API backend, 
+    // atau mencoba kedua variasi (dengan/tanpa titik).
+    // Contoh di bawah ini memeriksa jika input berupa angka murni sepanjang 21 digit, kita format otomatis:
+    const cleanNumbers = queryVal.replace(/\./g, "");
+    if (/^\d{21}$/.test(cleanNumbers)) {
+      // Contoh pola format titik: xx.xx.xx.xx.xx.xx.xx.xx.xxxxx (sesuaikan dengan format SKRD Anda)
+      queryVal = `${cleanNumbers.slice(0,2)}.${cleanNumbers.slice(2,4)}.${cleanNumbers.slice(4,6)}.${cleanNumbers.slice(6,8)}.${cleanNumbers.slice(8,10)}.${cleanNumbers.slice(10,12)}.${cleanNumbers.slice(12,14)}.${cleanNumbers.slice(14,16)}.${cleanNumbers.slice(16)}`;
+    }
+
     try {
-      const response = await fetch(
-        `/bapenda/pepakraja/tbp/check?no_penetapan=${encodeURIComponent(skrd.trim())}`,
+      let response = await fetch(
+        `/bapenda/pepakraja/tbp/check?no_penetapan=${encodeURIComponent(queryVal)}`,
         {
           headers: {
             token: "xV3nKd8QpL5rTyHuWc2MfZaJbE7sRt1",
@@ -166,8 +179,23 @@ export default function StatusBayar() {
         },
       );
 
-      const result = await response.json();
+      let result = await response.json();
       
+      // Fallback: Jika pencarian pertama gagal dan pengguna tadi memasukkan tanpa titik, 
+      // coba cari menggunakan input asli apa adanya
+      if ((result.code !== "00" || !result.data) && queryVal !== skrd.trim()) {
+        response = await fetch(
+          `/bapenda/pepakraja/tbp/check?no_penetapan=${encodeURIComponent(skrd.trim())}`,
+          {
+            headers: {
+              token: "xV3nKd8QpL5rTyHuWc2MfZaJbE7sRt1",
+              Accept: "application/json",
+            },
+          },
+        );
+        result = await response.json();
+      }
+
       if (result.code !== "00" || !result.data) {
         Swal.fire("Gagal", "Data TBP tidak ditemukan", "error");
         setData(null);
@@ -181,6 +209,7 @@ export default function StatusBayar() {
       setData({
         no_tbp: item.no_tbp || "",
         tanggal: formatDate(item.tanggal),
+        tanggal_skrd: formatDate(item.penetapan?.tanggal),
         nama: maskName(item.wr?.nama || "-"),
         alamat: maskAddress(item.wr?.alamat || "-"),
         nik: item.wr?.nik_npwp || "-",
@@ -243,7 +272,7 @@ export default function StatusBayar() {
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full ">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
           <h2 className="font-bold text-slate-800 mb-4 uppercase">
-            Masukkan kode bayar / No SKRD (Cth: SKRD/2025/12/001 atau SKRD/2025/12/004)
+            Masukkan kode bayar / No SKRD
           </h2>
           <div className="flex gap-2">
             <input
@@ -288,7 +317,7 @@ export default function StatusBayar() {
                   <h3 className="font-semibold text-base tracking-wide">Informasi Status Pembayaran Retribusi</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                 
+                  
                   <button
                     onClick={() => setData(null)}
                     className="text-slate-300 hover:text-white p-1 rounded-full hover:bg-white/10 transition ml-2"
@@ -368,7 +397,7 @@ export default function StatusBayar() {
                           <tr>
                             <td className="font-bold pl-8">Tanggal SKRD</td>
                             <td className="px-2">:</td>
-                            <td>{data.tanggal}</td>
+                            <td>{data.tanggal_skrd}</td>
                           </tr>
                           <tr>
                             <td className="py-2" colSpan="3"></td>
