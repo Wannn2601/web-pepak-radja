@@ -87,6 +87,15 @@ export default function QuickServices() {
       status: "coming",
       link: "#",
     },
+    {
+      id: 6,
+      icon: Receipt,
+      title: "Status Bayar",
+      count: "Tersedia",
+      color: "from-orange-500 to-amber-500",
+      status: "active",
+      link: "/statusbayar",
+    },
   ];
 
   return (
