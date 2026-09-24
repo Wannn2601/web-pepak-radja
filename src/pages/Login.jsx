@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Eye,
@@ -11,6 +11,7 @@ import {
   Database,
   Building2,
   BadgeCheck,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -24,16 +25,90 @@ export default function Login() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // State untuk Captcha Canvas
+  const [captcha, setCaptcha] = useState("");
+  const [inputCaptcha, setInputCaptcha] = useState("");
+  const canvasRef = useRef(null);
+
+  // Fungsi untuk menggambar Captcha ke Canvas dengan efek noise & garis
+  const generateCaptcha = useCallback(() => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+    setCaptcha(randomNum);
+    setInputCaptcha("");
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    // Atur ukuran canvas
+    canvas.width = 130;
+    canvas.height = 48;
+
+    // Background warna gelap / kontras agar cocok dengan tema gelap login
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Tambahkan garis-garis noise acak
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgba(${100 + Math.random() * 155}, ${100 + Math.random() * 155}, ${100 + Math.random() * 155}, 0.5)`;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.stroke();
+    }
+
+    // Tambahkan titik-titik noise kecil
+    for (let i = 0; i < 40; i++) {
+      ctx.fillStyle = `rgba(${150 + Math.random() * 105}, ${150 + Math.random() * 105}, ${150 + Math.random() * 105}, 0.6)`;
+      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+    }
+
+    // Tulis teks angka satu per satu dengan rotasi dan pergeseran posisi
+    ctx.font = "bold 24px 'Times New Roman'";
+    ctx.textBaseline = "middle";
+
+    for (let i = 0; i < randomNum.length; i++) {
+      ctx.save();
+      const x = 22 + i * 24;
+      const y = 24 + (Math.random() * 6 - 3);
+      
+      ctx.translate(x, y);
+      const angle = (Math.random() * 30 - 15) * Math.PI / 180;
+      ctx.rotate(angle);
+
+      // Warna teks cerah agar jelas terbaca di background gelap
+      ctx.fillStyle = `rgb(${200 + Math.floor(Math.random() * 55)}, ${200 + Math.floor(Math.random() * 55)}, 255)`;
+      ctx.fillText(randomNum[i], 0, 0);
+      ctx.restore();
+    }
+  }, []);
+
+  // Generate captcha saat komponen pertama kali dimuat
+  useEffect(() => {
+    generateCaptcha();
+  }, [generateCaptcha]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     setError("");
     setSuccess("");
+
+    // Validasi Captcha
+    if (!inputCaptcha) {
+      setError("Mohon isi kode captcha terlebih dahulu");
+      return;
+    }
+
+    if (inputCaptcha !== captcha) {
+      setError("Kode captcha yang Anda masukkan salah!");
+      generateCaptcha(); // Refresh captcha jika salah
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // DEV pakai vite proxy
-      // PROD pakai vercel api
       const API_URL = import.meta.env.DEV
         ? "/bapenda-api/pepakraja/wr/data"
         : "/api/auth";
@@ -51,46 +126,35 @@ export default function Login() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          // Kirim apa adanya (string) agar bisa menerima email atau angka
           npwrd: identifier,
           password,
         }),
       });
 
-      // ambil text dulu
       const text = await response.text();
-
       let result;
 
       try {
         result = JSON.parse(text);
       } catch {
         console.error("RAW RESPONSE:", text);
-
         throw new Error("Response server tidak valid");
       }
 
       console.log("LOGIN RESULT:", result);
 
-      // sukses
       if (result.code === "00") {
         setSuccess(result.message || "Login berhasil");
 
-        // waktu login
         const loginTime = Date.now();
-
-        // expired 24 jam (sesuaikan kebutuhan)
         const expiredAt = loginTime + 24 * 60 * 60 * 1000;
-
-        // Ambil token jika ada dari API, atau berikan penanda aktif
         const activeToken = result.data.token || "active_session";
 
-        // session user
         const sessionData = {
           isLoggedIn: true,
           loginTime,
           expiredAt,
-          token: activeToken, // <--- INI KUNCI UTAMANYA AGAR AUTH CONTEXT TERBACA
+          token: activeToken,
           user: {
             id: result.data.id,
             nama: result.data.nama,
@@ -107,10 +171,7 @@ export default function Login() {
           },
         };
 
-        // simpan session
         localStorage.setItem("wr_session", JSON.stringify(sessionData));
-
-        // header user
         localStorage.setItem(
           "wr_user_header",
           JSON.stringify({
@@ -120,19 +181,19 @@ export default function Login() {
           }),
         );
 
-        // redirect mulus menggunakan window.location.href agar AuthContext langsung mendeteksi sesi aktif
         setTimeout(() => {
           window.location.href = "/";
         }, 1000);
       } else {
         setError(result.message || "NPWRD atau password salah");
+        generateCaptcha(); // Refresh captcha jika login gagal
       }
     } catch (err) {
       console.error(err);
-
       setError(
         err.message || "Server tidak dapat dihubungi. Silakan coba lagi.",
       );
+      generateCaptcha();
     } finally {
       setIsLoading(false);
     }
@@ -143,9 +204,7 @@ export default function Login() {
       {/* BACKGROUND */}
       <div className="absolute inset-0">
         <div className="absolute -top-40 -left-40 w-[700px] h-[700px] bg-cyan-500/20 rounded-full blur-[150px] animate-pulse" />
-
         <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-blue-600/20 rounded-full blur-[150px] animate-pulse" />
-
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:35px_35px]" />
       </div>
 
@@ -164,7 +223,7 @@ export default function Login() {
         />
       ))}
 
-      <div className="relative z-10 container mx-auto px-6 min-h-screen flex items-center">
+      <div className="relative z-10 container mx-auto px-6 min-h-screen flex items-center py-10">
         <div className="grid lg:grid-cols-2 gap-16 items-center w-full">
           {/* LEFT SIDE */}
           <motion.div
@@ -179,7 +238,6 @@ export default function Login() {
                 alt="PEPAKRAJA"
                 className="m-2 w-32 mb-8 drop-shadow-[0_0_40px_rgba(34,211,238,0.6)]"
               />
-
               <img
                 src="/images/massajakBregada.png"
                 alt="PEPAKRAJA"
@@ -234,7 +292,6 @@ export default function Login() {
                     alt="PEPAKRAJA"
                     className="w-24"
                   />
-
                   <img
                     src="/images/bregada.png"
                     alt="PEPAKRAJA"
@@ -246,7 +303,6 @@ export default function Login() {
               {/* HEADER */}
               <div className="text-center mb-8">
                 <h2 className="mt-5 text-4xl font-black">Selamat Datang</h2>
-
                 <p className="text-gray-300 mt-2">
                   Login menggunakan NPWRD/Email dan Password
                 </p>
@@ -265,18 +321,15 @@ export default function Login() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* NPWRD */}
                 {/* NPWRD / EMAIL INPUT */}
                 <div>
                   <label className="block text-sm mb-2 text-gray-300">
                     NPWRD atau Email
                   </label>
-
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-300" />
-
                     <input
-                      type="text" // Diubah dari "number" ke "text"
+                      type="text"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="Masukkan NPWRD atau Email"
@@ -291,10 +344,8 @@ export default function Login() {
                   <label className="block text-sm mb-2 text-gray-300">
                     Password
                   </label>
-
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-300" />
-
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
@@ -303,11 +354,10 @@ export default function Login() {
                       required
                       className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-14 outline-none text-white placeholder:text-gray-400 focus:ring-4 focus:ring-cyan-400/20 focus:border-cyan-400 transition-all"
                     />
-
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-white"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -329,6 +379,41 @@ export default function Login() {
                   </div>
                 </div>
 
+                {/* CAPTCHA SECTION */}
+                <div>
+                  <label className="block text-sm mb-2 text-gray-300">
+                    Kode Verifikasi (Captcha)
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-slate-800 border border-white/20 px-2 py-1.5 rounded-2xl select-none justify-center">
+                      <canvas 
+                        ref={canvasRef} 
+                        className="rounded-xl border border-white/10 bg-slate-900 cursor-pointer shadow-inner"
+                        onClick={generateCaptcha}
+                        title="Klik untuk mengganti captcha"
+                      />
+                      <button
+                        type="button"
+                        onClick={generateCaptcha}
+                        className="text-gray-300 hover:text-cyan-300 p-1.5 transition"
+                        title="Refresh Captcha"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={inputCaptcha}
+                      onChange={(e) => setInputCaptcha(e.target.value.replace(/\D/g, ""))}
+                      placeholder="4 Angka"
+                      required
+                      className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 px-4 outline-none text-white placeholder:text-gray-400 text-center tracking-widest font-semibold focus:ring-4 focus:ring-cyan-400/20 focus:border-cyan-400 transition-all"
+                    />
+                  </div>
+                </div>
+
                 {/* BUTTON */}
                 <button
                   type="submit"
@@ -345,12 +430,12 @@ export default function Login() {
                       </>
                     ) : (
                       <>
-                        {/* <Sparkles className="w-5 h-5" /> */}
                         Masuk Sekarang
                       </>
                     )}
                   </div>
                 </button>
+
                 {/* LINK KE REGISTER */}
                 <div className="mt-6 text-center text-sm text-gray-400">
                   Belum punya akun?{" "}
@@ -368,6 +453,7 @@ export default function Login() {
               </div>
             </div>
           </motion.div>
+          
           <div className="fixed bottom-6 right-6 z-50 hidden-on-home">
             <a
               href="https://wa.me/6285642312609"
@@ -414,7 +500,6 @@ export default function Login() {
         0%,100% {
           transform: translateY(0);
         }
-
         50% {
           transform: translateY(-20px);
         }

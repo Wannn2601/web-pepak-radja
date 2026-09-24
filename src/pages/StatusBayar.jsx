@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Search, Printer, FileDown, QrCode, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Search, Printer, FileDown, QrCode, X, RefreshCw } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
@@ -13,9 +13,75 @@ export default function StatusBayar() {
   const [data, setData] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  
+  // State untuk Captcha
+  const [captcha, setCaptcha] = useState("");
+  const [inputCaptcha, setInputCaptcha] = useState("");
+  const canvasRef = useRef(null);
+
   const componentRef = useRef();
   
   const [printInfo, setPrintInfo] = useState(null);
+
+  // Fungsi untuk menggambar Captcha ke Canvas dengan efek visual/noise
+  const generateCaptcha = useCallback(() => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000).toString();
+    setCaptcha(randomNum);
+    setInputCaptcha("");
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    // Atur ukuran canvas
+    canvas.width = 120;
+    canvas.height = 40;
+
+    // Background warna cerah/abu-abu terang
+    ctx.fillStyle = "#f1f5f9";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Tambahkan garis-garis noise acak agar tidak terlalu gamblang dibaca bot
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgba(${Math.random() * 150}, ${Math.random() * 150}, ${Math.random() * 150}, 0.5)`;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.stroke();
+    }
+
+    // Tambahkan titik-titik noise kecil
+    for (let i = 0; i < 30; i++) {
+      ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.4)`;
+      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+    }
+
+    // Tulis teks angka satu per satu dengan sedikit rotasi dan pergeseran posisi agar dinamis
+    ctx.font = "bold 22px 'Times New Roman'";
+    ctx.textBaseline = "middle";
+
+    for (let i = 0; i < randomNum.length; i++) {
+      ctx.save();
+      const x = 20 + i * 22;
+      const y = 20 + (Math.random() * 6 - 3); // Geser posisi Y sedikit naik turun
+      
+      ctx.translate(x, y);
+      // Rotasi acak tipis (antara -15 hingga 15 derajat)
+      const angle = (Math.random() * 30 - 15) * Math.PI / 180;
+      ctx.rotate(angle);
+
+      // Warna teks acak gelap
+      ctx.fillStyle = `rgb(${Math.floor(Math.random() * 80)}, ${Math.floor(Math.random() * 80)}, ${Math.floor(Math.random() * 120)})`;
+      ctx.fillText(randomNum[i], 0, 0);
+      ctx.restore();
+    }
+  }, []);
+
+  // Generate captcha saat pertama kali komponen dimuat
+  useEffect(() => {
+    generateCaptcha();
+  }, [generateCaptcha]);
+
   const getPrintTimestamp = () => {
     const now = new Date();
     return now.toLocaleString("id-ID", {
@@ -142,18 +208,27 @@ export default function StatusBayar() {
   };
 
   const handleSearch = async () => {
-    setLoadingSearch(true);
-
     if (!skrd) {
       Swal.fire(
         "Peringatan",
         "Pastikan nomor SKRD / Kode Bayar terisi",
         "warning",
       );
-      setLoadingSearch(false);
       return;
     }
 
+    if (!inputCaptcha) {
+      Swal.fire("Peringatan", "Mohon isi kode captcha terlebih dahulu", "warning");
+      return;
+    }
+
+    if (inputCaptcha !== captcha) {
+      Swal.fire("Gagal", "Kode captcha yang Anda masukkan salah!", "error");
+      generateCaptcha();
+      return;
+    }
+
+    setLoadingSearch(true);
     let queryVal = skrd.trim();
 
     const cleanNumbers = queryVal.replace(/\./g, "");
@@ -190,6 +265,7 @@ export default function StatusBayar() {
       if (result.code !== "00" || !result.data) {
         Swal.fire("Gagal", "Data TBP tidak ditemukan", "error");
         setData(null);
+        generateCaptcha();
         return;
       }
 
@@ -218,6 +294,8 @@ export default function StatusBayar() {
         alamatuppd: item.opd?.alamat || "-",
         status_bayar: item.status_bayar || (item.no_tbp ? "sudah" : "belum"),
       });
+      
+      generateCaptcha();
     } catch (err) {
       Swal.fire(
         "Error",
@@ -225,6 +303,7 @@ export default function StatusBayar() {
         "error",
       );
       setData(null);
+      generateCaptcha();
     } finally {
       setLoadingSearch(false);
     }
@@ -265,20 +344,51 @@ export default function StatusBayar() {
           <h2 className="font-bold text-slate-800 mb-4 uppercase text-sm md:text-base">
             Masukkan kode bayar / No SKRD
           </h2>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-3">
             <input
-              className="flex-1 border border-slate-300 rounded p-2 text-sm"
-              placeholder="Masukkan Kode Bayar"
+              className="border border-slate-300 rounded p-2 text-sm w-full"
+              placeholder="Masukkan Kode Bayar / No SKRD"
               value={skrd}
               onChange={(e) => setSkrd(e.target.value)}
             />
-            <button
-              onClick={handleSearch}
-              disabled={loadingSearch}
-              className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded flex items-center justify-center gap-1 text-sm font-medium"
-            >
-              <Search className="w-4 h-4 inline mr-1" /> {loadingSearch ? "Memuat..." : "Cari"}
-            </button>
+
+            {/* Bagian Captcha Berbentuk Canvas dengan Noise & Garis */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-100 border border-slate-300 px-3 py-1.5 rounded select-none justify-center">
+                {/* Elemen Canvas untuk Visual Captcha */}
+                <canvas 
+                  ref={canvasRef} 
+                  className="rounded border border-slate-300 bg-white shadow-inner cursor-pointer"
+                  onClick={generateCaptcha}
+                  title="Klik untuk mengganti captcha"
+                />
+                <button
+                  type="button"
+                  onClick={generateCaptcha}
+                  className="text-slate-600 hover:text-blue-700 p-1 transition"
+                  title="Refresh Captcha"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input
+                type="text"
+                maxLength={4}
+                className="flex-1 border border-slate-300 rounded p-2 text-sm tracking-widest font-semibold"
+                placeholder="Masukkan 4 angka pada gambar"
+                value={inputCaptcha}
+                onChange={(e) => setInputCaptcha(e.target.value.replace(/\D/g, ""))}
+              />
+
+              <button
+                onClick={handleSearch}
+                disabled={loadingSearch}
+                className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded flex items-center justify-center gap-1 text-sm font-medium transition"
+              >
+                <Search className="w-4 h-4 inline mr-1" /> {loadingSearch ? "Memuat..." : "Cari"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -308,7 +418,6 @@ export default function StatusBayar() {
                   <h3 className="font-semibold text-xs sm:text-base tracking-wide">Informasi Status Pembayaran Retribusi</h3>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                 
                   <button
                     onClick={() => setData(null)}
                     className="text-slate-300 hover:text-white p-1 rounded-full hover:bg-white/10 transition ml-1"
@@ -318,7 +427,7 @@ export default function StatusBayar() {
                 </div>
               </div>
 
-              {/* Konten Utama Dokumen yang Responsif & Auto-Adjust untuk Layar Kecil */}
+              {/* Konten Utama Dokumen */}
               <div className="p-2 sm:p-6 overflow-y-auto flex-1 bg-slate-100 flex justify-center">
                 <div
                   ref={componentRef}
@@ -344,7 +453,6 @@ export default function StatusBayar() {
                         Telah terima dari Wajib Retribusi :
                       </div>
                       
-                      {/* Tabel Data Responsif Menggunakan Grid/Table Fleksibel */}
                       <table className="w-full text-left ml-1 sm:ml-10">
                         <tbody>
                           <tr>
@@ -448,7 +556,7 @@ export default function StatusBayar() {
                     </div>
                   </div>
 
-                  {/* Informasi Waktu Cetak di Bagian Bawah */}
+                  {/* Informasi Waktu Cetak */}
                   <div className="mt-8 sm:mt-12 border-t pt-3 text-[10px] italic text-slate-500">
                     {printInfo && (
                       <div>
