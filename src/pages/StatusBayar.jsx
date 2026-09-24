@@ -33,15 +33,12 @@ export default function StatusBayar() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    // Atur ukuran canvas
     canvas.width = 120;
     canvas.height = 40;
 
-    // Background warna cerah/abu-abu terang
     ctx.fillStyle = "#f1f5f9";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Tambahkan garis-garis noise acak agar tidak terlalu gamblang dibaca bot
     for (let i = 0; i < 5; i++) {
       ctx.strokeStyle = `rgba(${Math.random() * 150}, ${Math.random() * 150}, ${Math.random() * 150}, 0.5)`;
       ctx.beginPath();
@@ -50,34 +47,29 @@ export default function StatusBayar() {
       ctx.stroke();
     }
 
-    // Tambahkan titik-titik noise kecil
     for (let i = 0; i < 30; i++) {
       ctx.fillStyle = `rgba(${Math.random() * 100}, ${Math.random() * 100}, ${Math.random() * 100}, 0.4)`;
       ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
     }
 
-    // Tulis teks angka satu per satu dengan sedikit rotasi dan pergeseran posisi agar dinamis
     ctx.font = "bold 22px 'Times New Roman'";
     ctx.textBaseline = "middle";
 
     for (let i = 0; i < randomNum.length; i++) {
       ctx.save();
       const x = 20 + i * 22;
-      const y = 20 + (Math.random() * 6 - 3); // Geser posisi Y sedikit naik turun
+      const y = 20 + (Math.random() * 6 - 3);
       
       ctx.translate(x, y);
-      // Rotasi acak tipis (antara -15 hingga 15 derajat)
       const angle = (Math.random() * 30 - 15) * Math.PI / 180;
       ctx.rotate(angle);
 
-      // Warna teks acak gelap
       ctx.fillStyle = `rgb(${Math.floor(Math.random() * 80)}, ${Math.floor(Math.random() * 80)}, ${Math.floor(Math.random() * 120)})`;
       ctx.fillText(randomNum[i], 0, 0);
       ctx.restore();
     }
   }, []);
 
-  // Generate captcha saat pertama kali komponen dimuat
   useEffect(() => {
     generateCaptcha();
   }, [generateCaptcha]);
@@ -94,7 +86,6 @@ export default function StatusBayar() {
     });
   };
 
-  // Fungsi sensor nama bagian belakang
   const maskName = (str) => {
     if (!str) return "-";
     const words = str.split(" ");
@@ -104,7 +95,6 @@ export default function StatusBayar() {
     }).join(" ");
   };
 
-  // Fungsi sensor alamat bagian belakang
   const maskAddress = (str) => {
     if (!str) return "-";
     const length = str.length;
@@ -270,7 +260,6 @@ export default function StatusBayar() {
       }
 
       const item = result.data;
-      const pejabat = JSON.parse(item.json_pejabat || "{}");
       const jumlahBayar = Number(item.jumlah_bayar || 0);
 
       setData({
@@ -279,20 +268,18 @@ export default function StatusBayar() {
         tanggal_skrd: formatDate(item.penetapan?.tanggal),
         nama: maskName(item.wr?.nama || "-"),
         alamat: maskAddress(item.wr?.alamat || "-"),
-        nik: item.wr?.nik_npwp || "-",
+        alamat_obyek: item.obyek?.alamat,
         jumlah: jumlahBayar.toLocaleString("id-ID"),
-        terbilang: terbilang(jumlahBayar) + " Rupiah",
+        terbilang: (terbilang(jumlahBayar) + " Rupiah"),
         jenis_ret: item.obyek?.sub_rekening?.golongan?.golongan || "-",
         keterangan: item.obyek?.sub_rekening?.jenis?.jenis_retribusi || "-",
         no_skrd: item.no_penetapan || skrd.trim(),
         obyek: item.obyek?.obyek_retribusi || "-",
         lokasi: item.obyek?.alamat || "-",
-        nama_bendahara: pejabat.nama_bendahara || "-",
-        nip: pejabat.nip_bendahara || "-",
         uppd: item.uppd?.nama || "-",
         opd: item.opd?.nama || "-",
-        alamatuppd: item.opd?.alamat || "-",
-        status_bayar: item.status_bayar || (item.no_tbp ? "sudah" : "belum"),
+        status_bayar: item.status_bayar || (item.no_tbp ? "Sudah Terbayar" : "Belum Terbayar"),
+        metode_pembayaran: item.metode_pembayaran || "Virtual Account / Cash / QRIS",
       });
       
       generateCaptcha();
@@ -342,7 +329,7 @@ export default function StatusBayar() {
       <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
           <h2 className="font-bold text-slate-800 mb-4 uppercase text-sm md:text-base">
-            Masukkan kode bayar / No SKRD
+            Masukkan Nomor / Nomor Arsip SKRD
           </h2>
           <div className="flex flex-col gap-3">
             <input
@@ -352,10 +339,8 @@ export default function StatusBayar() {
               onChange={(e) => setSkrd(e.target.value)}
             />
 
-            {/* Bagian Captcha Berbentuk Canvas dengan Noise & Garis */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="flex items-center gap-2 bg-slate-100 border border-slate-300 px-3 py-1.5 rounded select-none justify-center">
-                {/* Elemen Canvas untuk Visual Captcha */}
                 <canvas 
                   ref={canvasRef} 
                   className="rounded border border-slate-300 bg-white shadow-inner cursor-pointer"
@@ -409,15 +394,16 @@ export default function StatusBayar() {
         {/* MODAL / POPUP DETAIL DATA */}
         {data && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl relative flex flex-col max-h-[95vh] border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative flex flex-col max-h-[90vh] border border-slate-100 overflow-hidden">
               
-              {/* Header Modal */}
-              <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-slate-900 to-blue-900 text-white shadow-md gap-2">
+              {/* Header Modal Action Bar */}
+              <div className="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 bg-gradient-to-r from-slate-900 to-blue-900 text-white shadow-md gap-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-pulse"></span>
                   <h3 className="font-semibold text-xs sm:text-base tracking-wide">Informasi Status Pembayaran Retribusi</h3>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-2">
+                  
                   <button
                     onClick={() => setData(null)}
                     className="text-slate-300 hover:text-white p-1 rounded-full hover:bg-white/10 transition ml-1"
@@ -427,141 +413,152 @@ export default function StatusBayar() {
                 </div>
               </div>
 
-              {/* Konten Utama Dokumen */}
-              <div className="p-2 sm:p-6 overflow-y-auto flex-1 bg-slate-100 flex justify-center">
+              {/* Konten Utama Dokumen (Jarak dirapatkan agar pas di modal) */}
+              <div className="p-3 sm:p-6 overflow-y-auto flex-1 bg-slate-100 flex justify-center">
                 <div
                   ref={componentRef}
-                  className="bg-white text-black w-full max-w-[210mm] min-h-[auto] sm:min-h-[297mm] px-4 sm:px-12 py-6 sm:py-10 font-['Times_New_Roman'] text-[11px] sm:text-[12px] leading-normal sm:leading-relaxed relative flex flex-col justify-between shadow-md rounded border border-slate-200 box-border"
+                  className="bg-white text-black w-full max-w-[210mm] px-6 sm:px-10 py-6 sm:py-8 font-['Times_New_Roman'] text-[12px] sm:text-[13px] leading-snug relative flex flex-col justify-between shadow-md rounded border border-slate-200 box-border"
                 >
                   <div>
-                    {/* Logo dan Judul */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 mb-2 text-center sm:text-left">
+                    {/* Header Logo dan Judul */}
+                    <div className="flex items-center gap-4 mb-3">
                       <img
                         src="/images/logo-jateng-official.png"
                         alt="Logo"
-                        className="w-[50px] sm:w-[60px] object-contain flex-shrink-0"
+                        className="w-[45px] sm:w-[55px] object-contain flex-shrink-0"
                       />
-                      <div className="flex-1 font-bold text-[12px] sm:text-[14px]">
-                        <div>INFORMASI STATUS PEMBAYARAN KETETAPAN RETRIBUSI</div>
+                      <div className="flex-1 text-center font-bold text-[13px] sm:text-[15px] tracking-wide uppercase">
+                        INFORMASI STATUS PEMBAYARAN
                       </div>
                     </div>
-                    <div className="text-right font-bold mt-2 text-[11px] sm:text-[12px]">{data.nik}</div>
-                    <div className="border-b-2 border-black mt-2 mb-4 sm:mb-6"></div>
+                    <div className="border-b-2 border-black mb-4"></div>
                     
-                    <div className="mt-2 sm:mt-4">
-                      <div className="font-bold mb-2 text-[11px] sm:text-[12px]">
-                        Telah terima dari Wajib Retribusi :
+                    {/* Struktur Poin 1 - 4 dengan Jarak Rapat */}
+                    <div className="space-y-3">
+                      {/* 1. Ketetapan */}
+                      <div>
+                        <div className="font-bold">1. Ketetapan.</div>
+                        <table className="w-full ml-5 mt-0.5">
+                          <tbody>
+                            <tr>
+                              <td className="w-[150px] py-0.5">a. No. SKRD</td>
+                              <td className="w-[20px] py-0.5">:</td>
+                              <td className="py-0.5">{data.no_skrd}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">b. Tanggal SKRD</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.tanggal_skrd || "-"}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">c. Jumlah Ketetapan</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">Rp {data.jumlah}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">d. Terbilang</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5 italic">{data.terbilang}</td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
-                      
-                      <table className="w-full text-left ml-1 sm:ml-10">
-                        <tbody>
-                          <tr>
-                            <td className="w-[130px] sm:w-[180px] font-bold align-top py-1">1. Nama</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1 break-all">{data.nama}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold align-top py-1">2. Alamat</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1 break-words">{data.alamat}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold align-top py-1">3. Jumlah Uang</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">Rp {data.jumlah}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">terbilang</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1 italic">{data.terbilang}</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1" colSpan="3"></td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold align-top py-1" colSpan="3">
-                              4. Untuk Membayar
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Jenis Layanan</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.jenis_ret} - {data.keterangan}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">No. SKRD</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.no_skrd}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Tanggal SKRD</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.tanggal_skrd}</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1" colSpan="3"></td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold align-top py-1" colSpan="3">
-                              5. Obyek Retribusi
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Obyek</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.obyek}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Lokasi Obyek</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1 break-words">{data.lokasi}</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1" colSpan="3"></td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold align-top py-1" colSpan="3">
-                              6. Status Pembayaran & No TBP
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Status Bayar</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">
-                              <span
-                                className={
-                                  data.status_bayar === "sudah"
-                                    ? "text-green-600 uppercase font-bold"
-                                    : "text-red-600 uppercase font-bold"
-                                }
-                              >
-                                {data.status_bayar === "sudah"
-                                  ? "Sudah Terbayar"
-                                  : "Belum Terbayar"}
-                              </span>
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">No. TBP</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.no_tbp ? data.no_tbp : "- (Belum Melakukan Pembayaran)"}</td>
-                          </tr>
-                          <tr>
-                            <td className="font-bold pl-4 sm:pl-8 align-top py-1">Tanggal Pembayaran</td>
-                            <td className="px-1 align-top py-1">:</td>
-                            <td className="py-1">{data.tanggal ? data.tanggal : "-"}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+
+                      {/* 2. Data Wajib Retribusi */}
+                      <div>
+                        <div className="font-bold">2. Data Wajib Retribusi.</div>
+                        <table className="w-full ml-5 mt-0.5">
+                          <tbody>
+                            <tr>
+                              <td className="w-[150px] py-0.5">a. Nama Wajib Retribusi</td>
+                              <td className="w-[20px] py-0.5">:</td>
+                              <td className="py-0.5">{data.nama}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">b. Alamat</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.alamat}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* 3. Layanan Retribusi */}
+                      <div>
+                        <div className="font-bold">3. Layanan Retribusi.</div>
+                        <table className="w-full ml-5 mt-0.5">
+                          <tbody>
+                            <tr>
+                              <td className="w-[150px] py-0.5">a. Jenis Layanan</td>
+                              <td className="w-[20px] py-0.5">:</td>
+                              <td className="py-0.5">{data.jenis_ret} - {data.keterangan}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">b. Uraian Layanan</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.obyek}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">c. Lokasi Obyek</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.alamat_obyek}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* 4. Status Pembayaran */}
+                      <div>
+                        <div className="font-bold">4. Status Pembayaran.</div>
+                        <table className="w-full ml-5 mt-0.5">
+                          <tbody>
+                            <tr>
+                              <td className="w-[150px] py-0.5">a. Status Bayar</td>
+                              <td className="w-[20px] py-0.5">:</td>
+                              <td className="py-0.5 font-bold">
+                                <span className={data.no_tbp ? "text-green-700" : "text-red-700"}>
+                                  {data.no_tbp ? "Sudah Terbayar" : "Belum Terbayar"}
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">b. No. TBP</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.no_tbp || "-"}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">c. Tanggal Pembayaran</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.tanggal || "-"}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">d. Cara Pembayaran</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.metode_pembayaran}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-0.5">e. TBP Diterbitkan Oleh</td>
+                              <td className="py-0.5">:</td>
+                              <td className="py-0.5">{data.opd} / {data.uppd}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Informasi Waktu Cetak */}
-                  <div className="mt-8 sm:mt-12 border-t pt-3 text-[10px] italic text-slate-500">
+                  {/* Footer Dokumen */}
+                  <div className="mt-6 pb-8 text-center text-[11px] sm:text-[12px] space-y-1 pt-4 border-t border-slate-300">
+                    <div className="font-bold tracking-wide">
+                      Dapatkan layananannya – Bayar Murahnya – Dapatkan Kemudahannya – Lancar Urusannya
+                    </div>
+                    <div className="italic font-semibold text-slate-700">
+                      "Terima kasih telah turut serta dalam pembangunan Provinsi Jawa Tengah"
+                    </div>
+                    
                     {printInfo && (
-                      <div>
-                        <div>Dicetak oleh: {printInfo.username}</div>
-                        <div>Waktu: {printInfo.waktu}</div>
+                      <div className="text-[10px] text-left italic text-slate-500 mt-2">
+                        Dicetak oleh: {printInfo.username} | Waktu: {printInfo.waktu}
                       </div>
                     )}
                   </div>
